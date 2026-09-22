@@ -45,7 +45,7 @@ def resource_path(relative_path):
 class ControlGUI(QWidget):
     def __init__(self, logger):
         super().__init__()
-        self.crux = CRUX(logger, shared_data.connections, shared_data.connections)
+        self.crux = CRUX(logger)
         self.logger = logger
 
         self.noz_timer = QTimer(self)

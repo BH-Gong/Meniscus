@@ -59,11 +59,11 @@ speedtable_default=[
 ]
 
 class CRUX:
-    def __init__(self, logger, ports, connections, debugmode=False):
+    def __init__(self, logger, debugmode=False):
         self.logger = logger
         self.debugmode = debugmode
-        self.connections = connections
-        self.ports = ports
+        self.connections = shared_data.connections
+        self.ports = shared_data.ports
         self.debounces = {}
         self.conn = sqlite3.connect('CRUX.db')
         self.cursor = self.conn.cursor()
@@ -149,12 +149,12 @@ class CRUX:
 
 # command communication ##############################################################################################################################################################
     def select_port(self, port):
-        if target_port_name in shared_data.ports:
-            idx = shared_data.ports.index(target_port_name)
+        if port in shared_data.ports:
+            idx = shared_data.ports.index(port)
 
             return shared_data.connections[idx]
-
-        return ValueError(f"Port '{target_port_name}' not found in shared_data.ports: {shared_data.ports}")
+        
+        return ValueError(f"Port '{port}' not found in shared_data.ports: {shared_data.ports}")
     
     def commun(self, code, connection, port):
         try:

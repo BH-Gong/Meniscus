@@ -33,7 +33,7 @@ f'# {기능명}'로 주석 검색하여 색인 가능
 class Serial_Selection(QWidget):
     def __init__(self, logger):
         super().__init__()
-        self.crux = CRUX(logger, shared_data.connections, shared_data.connections)
+        self.crux = CRUX(logger)
         self.logger = logger
         self.checked_port = set()
         self.port_index = {}
@@ -238,19 +238,21 @@ class Serial_Selection(QWidget):
 
     # Test Function
     def test_function(self, ax_info):
-        port_name = ax_info['name']
         temp_ser = None
         
         try:
             temp_ser=serial.Serial(ax_info['name'], 115200, 8, serial.PARITY_NONE,
                                 serial.STOPBITS_ONE, timeout=1)
 
-            temp_connection = CRUX(self.logger, [ax_info['name']], [temp_ser])
+            shared_data.ports.append(ax_info['name'])
+            shared_data.connections.append(temp_ser)
+
+            temp_connection = CRUX(self.logger)
             temp_connection.RTB_manual(ax_info['axis'], ax_info['name'], table_No=0)
             original_setting_speed = temp_connection.for_return
 
             if not original_setting_speed or len(original_setting_speed) < 3:
-                raise TimeoutError(f"Driver not responding or wrong device connected in ({port_name}).")
+                raise TimeoutError(f"Driver not responding or wrong device connected in ({ax_info['name']}).")
 
             temp_connection.WTB(ax_info['axis'], ax_info['name'], 0, 1)
             temp_connection.RTB_manual(ax_info['axis'], ax_info['name'], table_No=0)
@@ -269,8 +271,11 @@ class Serial_Selection(QWidget):
 
         finally:
             if temp_ser is not None and temp_ser.is_open:
+                shared_data.ports.remove(ax_info['name'])
+                shared_data.connections.remove(temp_ser)
                 temp_ser.close()
-                self.logger.log(f"{port_name} closed")
+                
+                self.logger.log(f"{ax_info['name']} closed")
                 time.sleep(0.1)
     
     # Setup Save Function
@@ -297,7 +302,7 @@ class Serial_Selection(QWidget):
             shared_data.connections.append(ser)
             shared_data.ports.append(port_name)
         
-        self.model=CRUX(self.logger, shared_data.ports,shared_data.connections, debugmode=False)
+        self.model=CRUX(self.logger)
         shared_data.model=self.model
 
         try:

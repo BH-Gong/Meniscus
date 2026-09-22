@@ -24,7 +24,7 @@ lock=threading.Lock()
 class ActuateGUI(QWidget):
     def __init__(self, logger):
         super().__init__()
-        self.crux = CRUX(logger, shared_data.connections, shared_data.connections)
+        self.crux = CRUX(logger)
         self.logger = logger
         command_queue = queue.Queue()
         shared_data.command_queue = command_queue

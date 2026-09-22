@@ -9,7 +9,7 @@ import os
 
 from GUIs.serial_GUI import Serial_Selection
 from GUIs.control_GUI import ControlGUI
-from GUIs.Actuate_GUI import ActuateGUI
+from GUIs.actuate_GUI import ActuateGUI
 from core.serial_ports import SerialPorts
 from core import shared_data
 from core.libCRUX import CRUX
