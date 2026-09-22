@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1024</width>
+    <height>768</height>
+   </rect>
+  </property>
+  <property name="sizeIncrement">
+   <size>
+    <width>4</width>
+    <height>3</height>
+   </size>
+  </property>
+  <property name="baseSize">
+   <size>
+    <width>400</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Arial</family>
+    <pointsize>14</pointsize>
+    <weight>75</weight>
+    <bold>true</bold>
+   </font>
+  </property>
+  <property name="acceptDrops">
+   <bool>false</bool>
+  </property>
+  <property name="windowTitle">
+   <string>Meniscus Motor Controller</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../../.designer/backup/logo.png</normaloff>../../../.designer/backup/logo.png</iconset>
+  </property>
+  <property name="iconSize">
+   <size>
+    <width>30</width>
+    <height>30</height>
+   </size>
+  </property>
+  <property name="tabShape">
+   <enum>QTabWidget::Rounded</enum>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>30</width>
+     <height>30</height>
+    </size>
+   </property>
+   <attribute name="toolBarArea">
+    <enum>TopToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+   <addaction name="actionPort_Select"/>
+   <addaction name="actioninitial_position_setting"/>
+   <addaction name="actionOpenFile"/>
+   <addaction name="actionConfirm_g"/>
+   <addaction name="actionPlot"/>
+   <addaction name="action_motor_control"/>
+  </widget>
+  <action name="actionPort_Select">
+   <property name="icon">
+    <iconset resource="../Meniscus/test.qrc">
+     <normaloff>:/icon/serial-port.png</normaloff>:/icon/serial-port.png</iconset>
+   </property>
+   <property name="text">
+    <string>Port Select</string>
+   </property>
+  </action>
+  <action name="actioninitial_position_setting">
+   <property name="icon">
+    <iconset resource="../Meniscus/test.qrc">
+     <normaloff>:/icon/DALL·E 2024-12-03 21.26.43 - A simple monochromatic icon representing the initial position calibration for a 3D printer. The design features a 3D printer's nozzle and build plate .jpg</normaloff>:/icon/DALL·E 2024-12-03 21.26.43 - A simple monochromatic icon representing the initial position calibration for a 3D printer. The design features a 3D printer's nozzle and build plate .jpg</iconset>
+   </property>
+   <property name="text">
+    <string>initial position setting</string>
+   </property>
+  </action>
+  <action name="action_motor_control">
+   <property name="icon">
+    <iconset resource="../Meniscus/test.qrc">
+     <normaloff>:/icon/3d-printer-settings-symbol.png</normaloff>:/icon/3d-printer-settings-symbol.png</iconset>
+   </property>
+   <property name="text">
+    <string>Motor_control</string>
+   </property>
+   <property name="toolTip">
+    <string>Motor control</string>
+   </property>
+  </action>
+  <action name="actionOpenFile">
+   <property name="icon">
+    <iconset resource="../Meniscus/test.qrc">
+     <normaloff>:/icon/free-icon-file-and-folder-8895329.png</normaloff>:/icon/free-icon-file-and-folder-8895329.png</iconset>
+   </property>
+   <property name="text">
+    <string>OpenFile</string>
+   </property>
+  </action>
+  <action name="actionConfirm_g">
+   <property name="icon">
+    <iconset resource="../Meniscus/test.qrc">
+     <normaloff>:/icon/file</normaloff>:/icon/file</iconset>
+   </property>
+   <property name="text">
+    <string>Confirm_g</string>
+   </property>
+  </action>
+  <action name="actionPlot">
+   <property name="icon">
+    <iconset resource="../Meniscus/test.qrc">
+     <normaloff>:/icon/toolpath.png</normaloff>:/icon/toolpath.png</iconset>
+   </property>
+   <property name="text">
+    <string>Plot</string>
+   </property>
+  </action>
+ </widget>
+ <resources>
+  <include location="../Meniscus/test.qrc"/>
+ </resources>
+ <connections/>
+</ui>
