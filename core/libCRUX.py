@@ -177,7 +177,7 @@ class CRUX:
                         with self.stop_lock:
                             self.stop_flag = True
 
-                        encoded_response = connection.read_until(b'\n')
+                        encoded_response = connection.read_until(b'\n', timeout=1)
                         response = encoded_response.decode('ascii')
 
                         with self.stop_lock:
@@ -213,66 +213,69 @@ class CRUX:
                         self.check_end(connection, axis1)
                         self.check_end(connection, axis2)
 
-                    if response and (response.startswith('C') or response.startswith('E')):
-                        id_code = response.split('\t')[0]
-                        command_code = response[2:5]
-
-                        if id_code == ('C'):
-                            if command_code == 'IDN':
-                                model_name = response.split('\t')[2]
-                                Version = int(response.split('\t')[3].rstrip('\r\n')) / 1000
-                                self.logger.log('%s Ver.%s' %(model_name, Version))
-                            elif command_code == 'RDP':
-                                value = response.split('\t')[2].rstrip('\r\n')
-                                self.for_return = value
-                                axis_No = response[5]
-                                self.logger.log("Current position of Axis No.%s is : %s"%(axis_No, value))
-                                self.logger.log(shared_data.pos)
-                            elif command_code == 'RSY':
-                                Sys_No = response.split('\t')[2]
-                                value = response.split('\t')[3].rstrip('\r\n')
-                                self.logger.log("Setup value of system No.%s is : %s"%(Sys_No, value))
-                            elif command_code == 'RTB':
-                                a = response[5]
-                                b = response.split('\t')[2]
-                                c = response.split('\t')[3]
-                                d = response.split('\t')[4]
-                                e = response.split('\t')[5]
-                                f = response.split('\t')[6].rstrip('\r\n')
-                                self.for_return = (a, b, c, d, e, f)
-                                self.logger.log("Axis No.%s : speedtable No=%s, Initial Velocity=%s, Maximum Velocity=%s, Acceleration Time=%s, Acceleration Mode=%s(1:Rectangular drive, 2:Trapezoidal drive)"%(a, b, c, d, e, f))
-                            elif command_code == 'STR':
-                                a = response[5]
-                                if a != 0:
-                                    b = response.split('\t')[2]
-                                    c = response.split('\t')[3]
-                                    d = response.split('\t')[4]
-                                    e = response.split('\t')[5]
-                                    f = response.split('\t')[6].rstrip('\r\n')
-                                    self.logger.log("Axis No.%s : driving state=%s, ORG sig.=%s, NORG sig.=%s, CCW limit sig.=%s, CW limit sig.=%s(0:OFF(STOP), 1:ON(Operating))"%(a, b, c, d, e, f))
-                                else:
-                                    self.logger.log('EMG sig.=%s(0:OFF, 1:ON)' %a)
-                            elif command_code == 'WSY':
-                                a = response[5]
-                                b = response.split('\t')[2]
-                                c = response.split('\t')[3]
-                                self.logger.log('Axis No.%s : Setup value of system No.%s is : %s' %(a, b, c))
-                            else:
-                                current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                                if self.debugmode: self.logger.log(f"Data received at {current_time}:{response}")
-                        elif id_code == ('E'):
-                            self.logger.error(response)
-                            if command_code == ('SYS'):
-                                error_code = response[5:].rstrip('\r\n')
-                                self.lookup_error(error_code)
-                            else:
-                                error_code = response.split('\t')[2].rstrip('\r\n')
-                                self.lookup_error(error_code)
+                    self.decode_response(response)
     
         except Exception as e:
             import traceback
             traceback.print_exc()
             self.logger.error(traceback.format_exc())
+
+    def decode_response(self, encoded_response):
+        if response and (response.startswith('C') or response.startswith('E')):
+            id_code = response.split('\t')[0]
+            command_code = response[2:5]
+
+            if id_code == ('C'):
+                if command_code == 'IDN':
+                    model_name = response.split('\t')[2]
+                    Version = int(response.split('\t')[3].rstrip('\r\n')) / 1000
+                    self.logger.log('%s Ver.%s' %(model_name, Version))
+                elif command_code == 'RDP':
+                    value = response.split('\t')[2].rstrip('\r\n')
+                    self.for_return = value
+                    axis_No = response[5]
+                    self.logger.log("Current position of Axis No.%s is : %s"%(axis_No, value))
+                    self.logger.log(shared_data.pos)
+                elif command_code == 'RSY':
+                    Sys_No = response.split('\t')[2]
+                    value = response.split('\t')[3].rstrip('\r\n')
+                    self.logger.log("Setup value of system No.%s is : %s"%(Sys_No, value))
+                elif command_code == 'RTB':
+                    a = response[5]
+                    b = response.split('\t')[2]
+                    c = response.split('\t')[3]
+                    d = response.split('\t')[4]
+                    e = response.split('\t')[5]
+                    f = response.split('\t')[6].rstrip('\r\n')
+                    self.for_return = (a, b, c, d, e, f)
+                    self.logger.log("Axis No.%s : speedtable No=%s, Initial Velocity=%s, Maximum Velocity=%s, Acceleration Time=%s, Acceleration Mode=%s(1:Rectangular drive, 2:Trapezoidal drive)"%(a, b, c, d, e, f))
+                elif command_code == 'STR':
+                    a = response[5]
+                    if a != 0:
+                        b = response.split('\t')[2]
+                        c = response.split('\t')[3]
+                        d = response.split('\t')[4]
+                        e = response.split('\t')[5]
+                        f = response.split('\t')[6].rstrip('\r\n')
+                        self.logger.log("Axis No.%s : driving state=%s, ORG sig.=%s, NORG sig.=%s, CCW limit sig.=%s, CW limit sig.=%s(0:OFF(STOP), 1:ON(Operating))"%(a, b, c, d, e, f))
+                    else:
+                        self.logger.log('EMG sig.=%s(0:OFF, 1:ON)' %a)
+                elif command_code == 'WSY':
+                    a = response[5]
+                    b = response.split('\t')[2]
+                    c = response.split('\t')[3]
+                    self.logger.log('Axis No.%s : Setup value of system No.%s is : %s' %(a, b, c))
+                else:
+                    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                    if self.debugmode: self.logger.log(f"Data received at {current_time}:{response}")
+            elif id_code == ('E'):
+                self.logger.error(response)
+                if command_code == ('SYS'):
+                    error_code = response[5:].rstrip('\r\n')
+                    self.lookup_error(error_code)
+                else:
+                    error_code = response.split('\t')[2].rstrip('\r\n')
+                    self.lookup_error(error_code)
 
     def check_end(self, connection, axis_no):
         while True:
@@ -353,7 +356,6 @@ class CRUX:
         self.logger.error("Emergency Stop!")
 
         if shared_data.ports:
-            print(shared_data.ports)
             for port in shared_data.ports:
                 try:
                     self.emg_STP(0, port)
