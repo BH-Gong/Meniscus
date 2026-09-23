@@ -28,6 +28,8 @@ from core.logger import Logger
             ㄴSave Log
         ㄴControl
             ㄴEmergency Stop
+        ㄴSetting 추가 필요
+            ㄴHidden 보이기 설정 추가 필요
     ㄴCentralWidget
         ㄴFunction Panel
             ㄴSerial Window Button

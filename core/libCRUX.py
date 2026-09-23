@@ -6,6 +6,7 @@ from datetime import datetime
 import math
 import matplotlib.pyplot as plt
 import serial
+import traceback
 
 from core import shared_data
 from core import utils
@@ -59,9 +60,8 @@ speedtable_default=[
 ]
 
 class CRUX:
-    def __init__(self, logger, debugmode=False):
+    def __init__(self, logger):
         self.logger = logger
-        self.debugmode = debugmode
         self.connections = shared_data.connections
         self.ports = shared_data.ports
         self.debounces = {}
@@ -158,141 +158,254 @@ class CRUX:
     
     def commun(self, code, connection, port):
         try:
-            if self.emg_event.is_set():
-                return
-            
-            utils.port_locker([port])
-            lock = shared_data.port_lock[port]
+            if code is not None:
+                # print(code)
+                encode = b'\x02' + code.encode('ascii') + b'\r\n'
+                connection.write(encode)
 
-            with lock:
-                if self.debugmode: self.logger.log(f"Sending command: {code}")
-                response = ""
+                utils.port_locker([port])
+                lock = shared_data.port_lock[port]
 
-                if code is not None:
-                    print(code)
-                    encode = b'\x02' + code.encode('ascii') + b'\r\n'
-                    connection.write(encode)
+                with lock:
+                    self.logger.hidden(f"Sending command: {code}")
 
-                    if code.startswith('STP'):
-                        with self.stop_lock:
-                            self.stop_flag = True
+                    response = ""
+                    start_time = time.time()
 
-                        encoded_response = connection.read_until(b'\n', timeout=1)
-                        response = encoded_response.decode('ascii')
-
-                        with self.stop_lock:
-                            self.stop_flag = False
-
-                        return
-                    
                     while True:
-                        if self.stop_flag:
-                            if self.debugmode: 
-                                self.logger.log("Stop flag is set. Exiting command.")
-
-                            break
-
                         encoded_response = connection.read_until(b'\n')
                         response = encoded_response.decode('ascii')
                         
-                        self.logger.log(f"[Worker] Commanding Done...")
-                        
-                        if self.debugmode: 
-                            self.logger.log(f"Data received: {response}- {port}")
+                        if time.time() - start_time >= 3:
+                            raise TimeoutError(f"No response received for command '{code}' on port '{port}'.")
 
-                        break
+                        _ = self.decode_response(code, response)
 
-                    if code.startswith(('APS', 'RPS')):
-                        axis_no = int(code.split('/')[0][-1])
-                        self.check_end(connection, axis_no)
+                        if self.check_end(connection, code):
+                            break
 
-                    elif code.startswith('MPS'):
-                        axis1 = int(code.split('/')[0][-1])
-                        axis2 = int(code.split('/')[2][-1])
-
-                        self.check_end(connection, axis1)
-                        self.check_end(connection, axis2)
-
-                    self.decode_response(response)
+                    self.logger.hidden(f"[Worker] Commanding Done...")
     
         except Exception as e:
-            import traceback
             traceback.print_exc()
             self.logger.error(traceback.format_exc())
 
-    def decode_response(self, encoded_response):
-        if response and (response.startswith('C') or response.startswith('E')):
-            id_code = response.split('\t')[0]
-            command_code = response[2:5]
+    def decode_response(self, command, response):
+        try:
+            for_return = () 
+            parts = response.rstrip('\r\n').split('\t')
+            id_code = parts[0]
+            command_code = parts[1][:3]
+            a = parts[1][-1:]
+            params = parts[2:]
 
-            if id_code == ('C'):
-                if command_code == 'IDN':
-                    model_name = response.split('\t')[2]
-                    Version = int(response.split('\t')[3].rstrip('\r\n')) / 1000
-                    self.logger.log('%s Ver.%s' %(model_name, Version))
+            if a.isdigit():
+                params.insert(0, a)
+
+            if id_code == 'C':
+                if command_code == 'APS':
+                    axis_no = params[0]
+
+                    for_return = (axis_no,)
+                    self.logger.hidden(f'Absolute position drive, axis No.{axis_no}.')
+
+                elif command_code == 'FRP':
+                    axis_no = params[0]
+
+                    for_return = (axis_no,)
+                    self.logger.hidden(f'Free rotation drive, axis No.{axis_no}.')
+
+                elif command_code == 'IDN':
+                    model_name = params[0]
+                    version = int(params[1]) / 1000
+
+                    for_return = (model_name, version)
+                    self.logger.hidden(f'{model_name} Ver.{version}')
+
+                elif command_code == 'MPI':
+                    axis_no = params[0]
+
+                    for_return = (axis_no,)
+                    self.logger.hidden(f"Initial parameter setted for MPS, axis No.{axis_no}.")
+
+                elif command_code == 'MPS':
+                    axis_no = params[0]
+
+                    for_return = (axis_No,)
+                    self.logger.hidden(f"Multi-axis position drive, {axis_no}(first one).")
+
+                elif command_code == 'ORG':
+                    axis_no = params[0]
+
+                    for_return = (axis_no,)
+                    self.logger.hidden(f'Origin return drive, axis No.{axis_no}.')
+
                 elif command_code == 'RDP':
-                    value = response.split('\t')[2].rstrip('\r\n')
-                    self.for_return = value
-                    axis_No = response[5]
-                    self.logger.log("Current position of Axis No.%s is : %s"%(axis_No, value))
-                    self.logger.log(shared_data.pos)
+                    axis_no = params[0]
+                    position = params[1]
+
+                    for_return = (axis_No, position)
+                    self.logger.hidden(f'Current position of Axis No.{axis_no} is {position}.')
+
+                elif command_code == 'RPS':
+                    axis_no = params[0]
+
+                    for_return = (axis_no,)
+                    self.logger.hidden(f'Relative position drive, axis No.{axis_no}.')
+
+                elif command_code == 'RST':
+                    for_return = ()
+                    self.logger.hidden(f'System reseted.')
+
                 elif command_code == 'RSY':
-                    Sys_No = response.split('\t')[2]
-                    value = response.split('\t')[3].rstrip('\r\n')
-                    self.logger.log("Setup value of system No.%s is : %s"%(Sys_No, value))
+                    axis_no = params[0]
+                    sys_no = params[1]
+                    set_value = params[2]
+
+                    for_return = (axis_no, sys_no, set_value)
+                    self.logger.hidden(f'Set value of system No.{sys_no} in axis No.{axis_no} as {set_value}')
+
                 elif command_code == 'RTB':
-                    a = response[5]
-                    b = response.split('\t')[2]
-                    c = response.split('\t')[3]
-                    d = response.split('\t')[4]
-                    e = response.split('\t')[5]
-                    f = response.split('\t')[6].rstrip('\r\n')
-                    self.for_return = (a, b, c, d, e, f)
-                    self.logger.log("Axis No.%s : speedtable No=%s, Initial Velocity=%s, Maximum Velocity=%s, Acceleration Time=%s, Acceleration Mode=%s(1:Rectangular drive, 2:Trapezoidal drive)"%(a, b, c, d, e, f))
+                    axis_no = params[0]
+                    spdtable_no = params[1]
+                    str_spd = params[2]
+                    max_spd = params[3]
+                    acc_time = params[4]
+                    acc_mode = params[5]
+
+                    for_return = (axis_no, spdtable_no, str_spd, max_spd, acc_time, acc_mode)
+                    self.logger.hidden(f'Axis No.{axis_no} : speedtable No.{spdtable_no},'
+                                       f'Initial Velocity={str_spd}, Maximum Velocity={max_spd},' 
+                                       f'Acceleration Time={acc_time}, Acceleration Mode={acc_mode}' 
+                                       f'(1:Rectangular drive, 2:Trapezoidal drive)')
+
+                elif command_code == 'SAV':
+                    for_return = ()
+                    self.logger.hidden(f'Position data saved.')
+
+                elif command_code == 'STP':
+                    axis_no = params[0]
+
+                    for_return = (axis_no,)
+                    self.logger.hidden(f'Motor stop, axis No.{axis_no}.')
+                
                 elif command_code == 'STR':
-                    a = response[5]
-                    if a != 0:
-                        b = response.split('\t')[2]
-                        c = response.split('\t')[3]
-                        d = response.split('\t')[4]
-                        e = response.split('\t')[5]
-                        f = response.split('\t')[6].rstrip('\r\n')
-                        self.logger.log("Axis No.%s : driving state=%s, ORG sig.=%s, NORG sig.=%s, CCW limit sig.=%s, CW limit sig.=%s(0:OFF(STOP), 1:ON(Operating))"%(a, b, c, d, e, f))
-                    else:
-                        self.logger.log('EMG sig.=%s(0:OFF, 1:ON)' %a)
+                    axis_no = params[0]
+                    drv_state = params[1]
+                    org_sig = params[2]
+                    norg_sig = params[3]
+                    ccw_lim = params[4]
+                    cw_lim = params[5]
+
+                    if axis_no == '1' or axis_no == '2':
+                        for_return = (axis_no, drv_state, org_sig, norg_sig, ccw_lim, cw_lim)
+                        self.logger.hidden(f'Axis No.{axis_no} : driving state={drv_state},'
+                                           f'ORG signal={org_sig}, NORG signal={norg_sig},' 
+                                           f'CCW limit signal={ccw_lim}, CW limit signal={cw_lim}'
+                                           f'(0:OFF(STOP), 1:ON(Operating))')
+
+                    elif axis_no == '0':
+                        for_return = (axis_no, drv_state)
+                        self.logger.hidden(f'Axis No.{axis_no} : EMG signal={drv_state} (0:OFF, 1:ON).')
+                
+                elif command_code == 'WRP':
+                    axis_no = params[0]
+                    set_value = params[1]
+
+                    for_return = (axis_no, sys_no, set_value)
+                    self.logger.hidden(f'Set position value of axis No.{axis_no} as {set_value}.')
+
                 elif command_code == 'WSY':
-                    a = response[5]
-                    b = response.split('\t')[2]
-                    c = response.split('\t')[3]
-                    self.logger.log('Axis No.%s : Setup value of system No.%s is : %s' %(a, b, c))
+                    axis_no = params[0]
+                    sys_no = params[1]
+                    set_value = params[2]
+
+                    for_return = (axis_no, sys_no, set_value)
+                    self.logger.hidden(f'Set value of system No.{sys_no} in axis No.{axis_no} as {set_value}.')
+
+                elif command_code == 'WTB':
+                    axis_no = params[0]
+                    
+                    for_return = (axis_no,)
+                    self.logger.hidden(f'Write speed table, axis No.{axis_no}.')
+
                 else:
-                    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-                    if self.debugmode: self.logger.log(f"Data received at {current_time}:{response}")
+                    raise ValueError(f'Unexpected response : {response}')
+
             elif id_code == ('E'):
-                self.logger.error(response)
-                if command_code == ('SYS'):
-                    error_code = response[5:].rstrip('\r\n')
-                    self.lookup_error(error_code)
+                code_pack_1 = ['APS', 'FRP', 'MPI', 'MPS', 'ORG', 'RPS', 'RSY', 
+                               'RTB', 'STP', 'STR', 'WRP', 'WSY', 'WTB']
+                code_pack_2 = ['RST', 'SAV']
+                if command_code in code_pack_1:
+                    axis_no = params[0]
+                    error_no = params[1]
+
+                    error_typ = lookup_error(error_no)
+
+                    for_return = (axis_no, error_no, error_typ)
+                    self.logger.error(f'{command_code} Error in axis No.{axis_no} : {error_typ}')
+
+                elif command_code in code_pack_2:
+                    error_no = params[0]
+
+                    error_typ = lookup_error(error_no)
+
+                    for_return = (error_no, error_typ)
+                    self.logger.error(f'{command_code} Error : {error_typ}')
+
                 else:
-                    error_code = response.split('\t')[2].rstrip('\r\n')
-                    self.lookup_error(error_code)
+                    raise ValueError(f'Unexpected response : {response}')
 
-    def check_end(self, connection, axis_no):
+            else:
+                raise ValueError(f'Unexpected response : {response}')
+
+            self.logger.hidden(f"Data received: {response}")
+
+        except Exception as e:
+            traceback.print_exc()
+            self.logger.error(traceback.format_exc())
+
+        return for_return
+            
+    def check_end(self, connection, port):
+        start_time = time.time()
+
         while True:
-            code = 'STR%d' %(axis_no)
-            encode = b'\x02' + code.encode('ascii') + b'\r\n'
-            connection.write(encode)
+            all_stopped = True
 
-            encoded_response = connection.read_until(b'\n')
-            response = encoded_response.decode('ascii')
+            for axis_no in range(1, 3):
+                code = 'STR%d' %(axis_no)
+                encode = b'\x02' + code.encode('ascii') + b'\r\n'
+                connection.write(encode)
 
-            if response.split('\t')[1][0:3] == 'STR':
-                if int(response.split('\t')[2]) == 0:
-                    break
+                encoded_response = connection.read_until(b'\n')
+                response = encoded_response.decode('ascii')
+
+                if time.time() - start_time >= 3:
+                    raise TimeoutError(f"No response received for command '{code}' on port '{port}'.")
+
+                para = self.decode_response(code, response)
+
+                if not para:
+                    raise ValueError(
+                        f"Invalid response for '{code}': {response!r}"
+                    )
+
+                if para[0] == '0':
+                    pass
+                elif para[0] == '1':
+                    all_stopped = False
+                else:
+                    raise ValueError(f"Unexpected response format: {response}")
+
+            if all_stopped:
+                break
 
             time.sleep(0.01)
 
-    # look up error message
+        return True
+
+    # 수정 필요
     def get_error_message(self, error_code):
         return self.error_codes.get(error_code, 'Unknown Error')
     
