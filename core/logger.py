@@ -13,7 +13,7 @@ class Logger(QObject):
     def __init__(self, text_box):
         super().__init__()
         self.text_box = text_box
-        self.show_hidden = shared_data.show_hidden_logs
+        self.show_hidden = False
         self.logs = []
 
         self.log_signal.connect(self._log)

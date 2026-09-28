@@ -1,7 +1,6 @@
 # Variations
 active_flag = True
 absolute_flag = True
-show_hidden_logs = False
 
 connections = []
 ports = []

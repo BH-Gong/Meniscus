@@ -73,8 +73,7 @@ class MainGUI:
 
         # File
         self.file = QMenu("File", self.menubar)
-        self.file.setStyleSheet('''background-color: #333333;
-                                color: white;''')
+        self.file.setStyleSheet(utils.menu_style())
         self.file.setFont(QFont('Arial', 12))
         self.menubar.addMenu(self.file)
         
@@ -86,8 +85,7 @@ class MainGUI:
 
         # Edit
         self.edit = QMenu("Edit", self.menubar)
-        self.edit.setStyleSheet('''background-color: #333333;
-                                color: white;''')
+        self.edit.setStyleSheet(utils.menu_style())
         self.edit.setFont(QFont('Arial', 12))
         self.menubar.addMenu(self.edit)
 
@@ -122,8 +120,7 @@ class MainGUI:
 
         # Control
         self.control = QMenu("Control", self.menubar)
-        self.control.setStyleSheet('''background-color: #333333;
-                                   color: white;''')
+        self.control.setStyleSheet(utils.menu_style())
         self.control.setFont(QFont('Arial', 12))
         self.menubar.addMenu(self.control)
 
@@ -132,6 +129,17 @@ class MainGUI:
         self.action_emergency_stop.triggered.connect(self.conn_emergency_stop)
         self.action_emergency_stop.setShortcut("Ctrl+E")
         self.control.addAction(self.action_emergency_stop)
+
+        # Setting
+        self.setting = QMenu("Setting", self.menubar)
+        self.setting.setStyleSheet(utils.menu_style())
+        self.setting.setFont(QFont('Arial', 12))
+        self.menubar.addMenu(self.setting)
+
+        # Show Hidden Log
+        self.show_hidden = QAction("Show Hidden Log", MainWindow)
+        self.show_hidden.triggered.connect(self.show_hidden_log)
+        self.setting.addAction(self.show_hidden)
 
         # Central Widget
         self.central_widget = QWidget(MainWindow)
@@ -260,6 +268,21 @@ class MainGUI:
 
     def open_g_code_window(self):
         self.stack.setCurrentWidget(self.g_code_window)
+
+    def show_hidden_log(self):
+        if self.logger.show_hidden:
+            self.logger.show_hidden = False
+            self.logger.log('Hidden log : Invisiable')
+
+            self.logger._refresh()
+            self.logger.hidden("for test 안보이기")
+
+        else:
+            self.logger.show_hidden = True
+            self.logger.log('Hidden log : Visiable')
+
+            self.logger._refresh()
+            self.logger.hidden("for test 보이기")
 
     def text_box_clear(self):
         if self.text_box is not None:

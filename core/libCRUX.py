@@ -185,7 +185,7 @@ class CRUX:
                             if b'\n' in response:
                                 break
 
-                    self.logger.hidden(f"[Worker] Commanding Done...")
+                    self.logger.hidden(f"Commanding Done...")
     
         except Exception as e:
             self.logger.error(e)

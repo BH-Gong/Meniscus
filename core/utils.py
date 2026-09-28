@@ -105,6 +105,38 @@ def tree_style():
             }
             """)
 
+def menu_style():
+    return (
+        """
+        QMenu {
+            background-color: #333333;
+            color: white;
+            border: 1px solid #888888;
+        }
+
+        QMenu::item {
+            background-color: #333333;
+            color: white;
+            padding: 4px 10px;
+        }
+
+        QMenu::item:selected {
+            background-color: #555555;
+        }
+
+        QMenu::item:disabled {
+            background-color: #333333;
+            color: #888888;
+        }
+
+        QMenu::separator {
+            height: 1px;
+            background-color: #666666;
+            margin: 4px 0px;
+        }
+        """
+    )
+
 def chk_none_variable(data):
     temp_list = []
     temp_bool = False
