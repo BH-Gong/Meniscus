@@ -157,8 +157,6 @@ class CRUX:
         return ValueError(f"Port '{port}' not found in shared_data.ports: {shared_data.ports}")
 
     def commun(self, code, connection, port):
-        self.logger.warning('w')
-
         try:
             if code is not None:
                 encode = b'\x02' + code.encode('ascii') + b'\r\n'
