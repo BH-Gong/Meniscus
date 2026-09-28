@@ -66,9 +66,7 @@ class MainGUI:
         # Menu Bar
         self.menubar = QMenuBar()
         MainWindow.setMenuBar(self.menubar)
-        self.menubar.setStyleSheet('''background-color: #333333; 
-                                   color: white;
-                                   padding: 5px;''')
+        self.menubar.setStyleSheet(utils.menubar_style())
         self.menubar.setFont(QFont('Arial', 12))
 
         # File

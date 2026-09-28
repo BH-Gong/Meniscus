@@ -137,6 +137,30 @@ def menu_style():
         """
     )
 
+def menubar_style():
+    return (
+        """
+        QMenuBar {
+            background-color: #333333;
+            color: white;
+        }
+
+        QMenuBar::item {
+            background-color: #333333;
+            color: white;
+            padding: 6px 12px;
+        }
+
+        QMenuBar::item:selected {
+            background-color: #555555;
+        }
+
+        QMenuBar::item:pressed {
+            background-color: #444444;
+        }
+        """
+    )
+
 def chk_none_variable(data):
     temp_list = []
     temp_bool = False
