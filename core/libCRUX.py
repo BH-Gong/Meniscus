@@ -333,28 +333,28 @@ class CRUX:
                     raise ValueError(f'Unexpected response : {response}')
 
             elif id_code == ('E'):
+                cdoe_pack_0 = ['SYS']
                 code_pack_1 = ['APS', 'FRP', 'MPI', 'MPS', 'ORG', 'RPS', 'RSY', 
                                'RTB', 'STP', 'STR', 'WRP', 'WSY', 'WTB']
                 code_pack_2 = ['RST', 'SAV']
-                if command_code in code_pack_1:
-                    axis_no = params[0]
-                    error_no = params[1]
 
-                    error_typ = lookup_error(error_no)
-
-                    for_return = (axis_no, error_no, error_typ)
-                    self.logger.error(f'{command_code} Error in axis No.{axis_no} : {error_typ}')
+                if command_code in code_pack_0:
+                    error_typ = 'sys'
+ 
+                elif command_code in code_pack_1:
+                    error_typ = 'gen'
 
                 elif command_code in code_pack_2:
-                    error_no = params[0]
-
-                    error_typ = lookup_error(error_no)
-
-                    for_return = (error_no, error_typ)
-                    self.logger.error(f'{command_code} Error : {error_typ}')
+                    error_typ = 'rst_sav'
 
                 else:
                     raise ValueError(f'Unexpected response : {response}')
+
+                error_para = params
+                error_msg = get_error_message(error_typ, error_para)
+
+                for_return = (error_typ, error_para)
+                self.logger.error(f'{error_msg}')
 
             else:
                 raise ValueError(f'Unexpected response : {response}')
@@ -387,9 +387,7 @@ class CRUX:
                 para = self.decode_response(code, response)
 
                 if not para:
-                    raise ValueError(
-                        f"Invalid response for '{code}': {response!r}"
-                    )
+                    raise ValueError(f"Invalid response for '{code}': {response!r}")
 
                 if para[0] == '0':
                     pass
@@ -405,38 +403,83 @@ class CRUX:
 
         return True
 
-    # 수정 필요
-    def get_error_message(self, error_code):
-        return self.error_codes.get(error_code, 'Unknown Error')
-    
-    def lookup_error(self, error_code):
-        error_message=self.get_error_message(error_code)
-        length = len(error_code)
+    def get_error_message(self, error_typ, error_para):
+        err_msg = self.lookup_error(error_no)
 
-        if length == 1:
-            self.logger.error('This error is a kind of system error')
-            self.logger.error(error_message)
-        elif length != 1 and error_code.startswith('1'):
-            self.logger.error('This error is a kind of parameter error')
-            self.logger.error(error_message)
-        elif error_code.startswith('3'):
-            self.logger.error('This error is a kind of drive system error')
-            if error_code in ('304', '305', '306'):
-                self.logger.error(error_message[0])
-            else:
-                self.logger.error(error_message)
-        elif length!=1 and error_code.startswith('5'):
-            self.logger.error('This error is a kind of MPS command error')
-            self.logger.error(error_message)
-        elif error_code.startswith('6'):
-            self.logger.error('This error is a kind of WTB command calculation error')
-            self.logger.error(error_message)
-        elif error_code.startswith('7'):
-            self.logger.error('This error is a kind of system setting errors(WSY command errors)')
-            self.logger.error(error_message)
+        if error_typ == 'sys':
+            err_msg = self.lookup_error(error_para[0])
+            s = f'System Error : {err_msg}'
+        elif error_typ == 'gen':
+            err_msg = self.lookup_error(error_para[1])
+            s = f'Error at {error_para[0]} : {err_msg}'
+        elif error_typ == 'rst_sav':
+            err_msg = self.lookup_error(error_para[0])
+            s = f'STR, SAV Error : {err_msg}'
+
+        return s
+
+    def lookup_error(self, error_no):
+        if error_no == '0':
+            err_str = 'Emergency stop status is detected.'
+        elif error_no == '1':
+            err_str = 'No STX on the head of the command.'
+        elif error_no == '4':
+            err_str = 'Characters other than specified characters and numbers are included.'
+        elif error_no == '5':
+            err_str = 'No applicable command.'
+        elif error_no == '100':
+            err_str = 'Total number of parameters is incorrect.'
+        elif error_no in ('101', '102', '103', '104', '105', '106'):
+            err_str = f'Parameter value on {error_no[-1]}th parameter is out of range.'
+        elif error_no == '121':
+            err_str = 'There is no applicable system.'
+        elif error_no == '130':
+            err_str = 'Due to system settings being made, commands cannot be executed.'
+        elif error_no == '300':
+            err_str = 'Tried to turn excitation of the axis being driven OFF.'
+        elif error_no == '302':
+            err_str = 'Tried to operate while axes are driving.'
+        elif error_no == '303':
+            err_str = 'Tried to write the present value of the axis during driving.'
+        elif error_no == '304':
+            err_str = 'Tried to drive in the CW direction in the CW limit detection state. OR Stopped at CW limit during driving.'
+        elif error_no == '305':
+            err_str = 'Tried to drive in the CCW direction in the CCW limit detection state. OR Stopped at CCW limit during driving.'
+        elif error_no == '306':
+            err_str = 'Tried to conduct MPS driving in the limit detection state direction. OR Some MPS driving axes stopped at limit.'
+        elif error_no == '307':
+            err_str = 'Both CW and CCW limiters are included.'
+        elif error_no == '308':
+            err_str = 'Tried to move an axis with its excitation OFF.'
+        elif error_no == '310':
+            err_str = 'Coordinates of the mov ement destination are outside of the manageable range.'
+        elif error_no == '313':
+            err_str = 'Tried to write the system settings of the axis being driven.'
+        elif error_no == '314':
+            err_str = 'The axis being driven was stopped due to emergency stop detection.'
+        elif error_no == '325':
+            err_str = 'The axis being driven was stopped by INCOM due to a command.'
+        elif error_no == '500':
+            err_str = 'Tried to drive in MPS with the MPI command not issued.'
+        elif error_no == '505':
+            err_str = 'Coordinates of the first axis movement destination are outside of the manageable range.'
+        elif error_no == '506':
+            err_str = 'Coordinates of the second axis movement destination are outside of the manageable range.'
+        elif error_no == '511':
+            err_str = 'The first axis and second axis are the same axis.'
+        elif error_no == '605':
+            err_str = 'Tried to set the start speed in excess of 80% of the maximum speed.'
+        elif error_no == '700':
+            err_str = 'Tried to change an incompatible system setting.'
+        elif error_no == '800':
+            err_str = 'Tried to execute a drive command during emergency stop.'
+        elif error_no == '804':
+            err_str = 'Tried to execute an RST command during drive.'
         else:
-            self.logger.error('This is error is other error')
-            self.logger.error(error_message)
+            err_str = ""
+            raise ValueError(f'Unexpected error number : {error_no}') 
+
+        return err_str
     
     def send_signals(self, codes, ports):
         try:
