@@ -155,11 +155,76 @@ class CRUX:
             return shared_data.connections[idx]
         
         return ValueError(f"Port '{port}' not found in shared_data.ports: {shared_data.ports}")
-    
+
     def commun(self, code, connection, port):
+        self.logger.warning('w')
+
         try:
             if code is not None:
-                # print(code)
+                encode = b'\x02' + code.encode('ascii') + b'\r\n'
+                connection.write(encode)
+
+                utils.port_locker([port])
+                lock = shared_data.port_lock[port]
+
+                with lock:
+                    self.logger.warning(f"Sending command: {code}")
+
+                    response = b''
+                    start_time = time.time()
+
+                    while time.time() - start_time < 3:
+                        self.logger.warning("[1] entered loop")
+
+                        if shared_data.stop_event is not None and shared_data.stop_event.is_set():
+                            self.logger.warning("[2] stop event")
+                            return
+
+                        self.logger.warning("[3] before in_waiting")
+
+                        waiting = connection.in_waiting
+
+                        self.logger.warning(f"[4] in_waiting = {waiting}")
+
+                        if waiting > 0:
+                            self.logger.warning("[5] before read")
+
+                            response += connection.read(waiting)
+
+                            self.logger.warning(f"[6] after read: {response!r}")
+
+                            if b'\n' in response:
+                                self.logger.warning("[7] newline received")
+                                self.logger.error("Timeout")
+                                break
+
+                        self.logger.warning("[8] before sleep")
+                        time.sleep(0.01)
+                        self.logger.warning("[9] after sleep")
+
+                    if b'\n' not in response:
+                        raise TimeoutError(
+                            f"Timeout: {code} / {port}"
+                        )
+
+                    self.logger.warning(
+                        f"[RESPONSE] {code}: {response!r}"
+                    )
+
+                    response_str = response.decode('ascii')
+
+                    _ = self.decode_response(code, response_str)
+
+                    result = self.check_end(connection, port)
+
+        except Exception as e:
+            self.logger.error(e)
+
+    def commun(self, code, connection, port):
+        self.logger.warning('w')
+
+        try:
+            if code is not None:
                 encode = b'\x02' + code.encode('ascii') + b'\r\n'
                 connection.write(encode)
 
@@ -169,26 +234,27 @@ class CRUX:
                 with lock:
                     self.logger.hidden(f"Sending command: {code}")
 
-                    response = ""
+                    response = b''
                     start_time = time.time()
 
-                    while True:
-                        encoded_response = connection.read_until(b'\n')
-                        response = encoded_response.decode('ascii')
-                        
-                        if time.time() - start_time >= 3:
-                            raise TimeoutError(f"No response received for command '{code}' on port '{port}'.")
+                    while time.time() - start_time < 3:
 
-                        _ = self.decode_response(code, response)
+                        if shared_data.stop_event is not None and shared_data.stop_event.is_set():
 
-                        if self.check_end(connection, code):
-                            break
+                            return
+
+                        waiting = connection.in_waiting
+
+                        if waiting > 0:
+                            response += connection.read(waiting)
+
+                            if b'\n' in response:
+                                break
 
                     self.logger.hidden(f"[Worker] Commanding Done...")
     
         except Exception as e:
-            traceback.print_exc()
-            self.logger.error(traceback.format_exc())
+            self.logger.error(e)
 
     def decode_response(self, command, response):
         try:
@@ -371,6 +437,9 @@ class CRUX:
         start_time = time.time()
 
         while True:
+            if time.time() - start_time >= 3:
+                raise TimeoutError(f"No response received for command '{code}' on port '{port}'.")
+
             all_stopped = True
 
             for axis_no in range(1, 3):
@@ -380,9 +449,6 @@ class CRUX:
 
                 encoded_response = connection.read_until(b'\n')
                 response = encoded_response.decode('ascii')
-
-                if time.time() - start_time >= 3:
-                    raise TimeoutError(f"No response received for command '{code}' on port '{port}'.")
 
                 para = self.decode_response(code, response)
 

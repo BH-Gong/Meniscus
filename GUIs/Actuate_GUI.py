@@ -124,7 +124,7 @@ class ActuateGUI(QWidget):
         self.est_time_label = QLabel("Estimated Time: ")
         self.est_time_label.setAlignment(Qt.AlignCenter)
         self.est_time_label.setFont(QFont('Arial', 18, QFont.Bold))
-        self.est_time_value = QLabel("00:00:00")
+        self.est_time_value = QLabel("00:00:00.000")
         self.est_time_value.setAlignment(Qt.AlignCenter)
         self.est_time_value.setFont(QFont('Arial', 18, QFont.Bold))
 
@@ -138,7 +138,7 @@ class ActuateGUI(QWidget):
         self.elap_time_label = QLabel("Elapsed Time: ")
         self.elap_time_label.setAlignment(Qt.AlignCenter)
         self.elap_time_label.setFont(QFont('Arial', 18, QFont.Bold))
-        self.elap_time_value = QLabel("00:00:00") # modification necessary
+        self.elap_time_value = QLabel("00:00:00.000")
         self.elap_time_value.setAlignment(Qt.AlignCenter)
         self.elap_time_value.setFont(QFont('Arial', 18, QFont.Bold))
 

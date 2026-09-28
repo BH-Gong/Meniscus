@@ -75,3 +75,5 @@ class Logger(QObject):
 
             elif log_type == "hidden":
                 html = (f"<span style='color:yellow;'>[{time}]</span> - <span style='color:gray;'>{message}</span>")
+
+            self.text_box.append(html)
