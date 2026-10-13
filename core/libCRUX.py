@@ -10,46 +10,10 @@ import traceback
 from core import shared_data
 from core import utils
 
-all_error_code={'0':'Emergency stop status is detected (not dependent on the driv e conditions)',
-        '1':'No STX on the head of the command.',
-        '4':'Characters other than specified characters and numbers are included.',
-        '5':'No applicable command.',
-        '100':'Total number of parameters is incorrect.',
-        '101':'Parameter value on 1st parameter is out of range.',
-        '102':'Parameter value on 2nd parameter is out of range.',
-        '103':'Parameter value on 3rd parameter is out of range.',
-        '104':'Parameter value on 4th parameter is out of range.',
-        '105':'Parameter value on 5th parameter is out of range.',
-        '106':'Parameter value on 6th parameter is out of range.',
-        '121':'There is no applicable system No.',
-        '130':'Due to system settings being made, commands cannot be executed.',
-        '300':'Tried to turn excitation of the axis being driven OFF.',
-        '302':'Tried to operate while axes are driving.',
-        '303':'Tried to write the present value of the axis during driving',
-        '304':('Stopped at CW limit during driving. ','Tried to drive in the CW direction in the CW limit detection state.'),
-        
-        '305':('Stopped at CCW limit during driving. ','Tried to drive in the CCW direction in the CCW limit detection state.'),
-        '306':('Some MPS driving in the limit detection state direction','Tried to conduct MPS driving in the limit detection state direction.'),
-        '307':'Both CW and CCW limiters are included.',
-        '308':'Tried to move an axis with its excitation OFF.',
-        '310':'Coordinates of the movement destination are outside of the manageable range.',
-        '313':'Tried to write the system settings of the axis being driven.',
-        '314':'The axis being driven was stopped due to emergency stop detection.',
-        '325':'The axis being driven was stopped by INCOM due to a command.',
-        '500':'Tried to drive iin MPS with the MPI command not issued.',
-        '505':'Coordinates of the first axis movement destination are outside of the manageable range.',
-        '506':'Coordinates of the second axis movement destination are outside of the manageable range.',
-        '511':'The first axis and second axis are the same axis.',
-        '605':'Tried to set the start speed in excess of 80% of the maximum speed',
-        '700':'Tried to change an incompatible system setting No.',
-        '800':'Tried to execute a drive command during emergency stop.',
-        '804':'Tried to execute an RST command during drive.'}
-
 sys_default=[
     (1,0),(2,4),(6,0),(7,0),(8,0),(21,0),(22,0),(23,0),(61,1),(68,2000)
 ]
-# The value of '0' in speedtable will be use as gcode actuation speed value. 
-# (Will not appear at speedtable in control pennel.)
+
 speedtable_default=[
 (0,1,16,500,500),(1,2,20,500,2000),
 (2,2,24,500,3000),(3,2,28,500,4000),
@@ -99,30 +63,6 @@ class CRUX:
         parameter=(parameter_name,value)
         return parameter
 
-# select data in database ##############################################################################################################################################################
-    def select_speedtable(self, table_No): 
-        return parameter
-    
-    def select_sys_setting(self):
-        id=int(input("읽을 System setting 번호를 입력하세요: "))
-        return sys_setting
-
-    def select_parameter(self,parameter_name):
-        return parameter_value
-
-# search data in database ######################################################################################################
-    def search_speedtable_data(self):
-        df_speedtable = pd.DataFrame.from_records(data=rows, columns=cols)
-        print(df_speedtable)
-    
-    def search_parameter_data(self):
-        df_parameter = pd.DataFrame.from_records(data=rows, columns=cols)
-        print(df_parameter)
-
-    def search_sys_setting_data(self):
-        df_sys_setting = pd.DataFrame.from_records(data=rows, columns=cols)
-        print(df_sys_setting)
-
 # command communication ##############################################################################################################################################################
     def select_port(self, port):
         if port in shared_data.ports:
@@ -161,12 +101,16 @@ class CRUX:
                             if b'\n' in response:
                                 break
 
+                    if response:
+                        decode_response = response.decode('ascii')
+                        self.decode_response(decode_response)
+
                     self.logger.hidden(f"Commanding Done...")
     
         except Exception as e:
             self.logger.error(e)
 
-    def decode_response(self, command, response):
+    def decode_response(self, response):
         try:
             parts = response.rstrip('\r\n').split('\t')
             id_code = parts[0]
@@ -308,7 +252,7 @@ class CRUX:
                     raise ValueError(f'Unexpected response : {response}')
 
             elif id_code == ('E'):
-                cdoe_pack_0 = ['SYS']
+                code_pack_0 = ['SYS']
                 code_pack_1 = ['APS', 'FRP', 'MPI', 'MPS', 'ORG', 'RPS', 'RSY', 
                                'RTB', 'STP', 'STR', 'WRP', 'WSY', 'WTB']
                 code_pack_2 = ['RST', 'SAV']
