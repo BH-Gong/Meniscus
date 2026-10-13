@@ -68,7 +68,7 @@ class ActuateGUI(QWidget):
         self.emergency_stop_button = QPushButton("Emergency Stop\n(Ctrl+E)")
         self.emergency_stop_button.setStyleSheet(button_style())
         self.emergency_stop_button.setFont(QFont('Arial', 10, QFont.Bold))
-        self.emergency_stop_button.clicked.connect(lambda: self.crux.emergency_stop())
+        self.emergency_stop_button.clicked.connect(self.emergency_stop)
 
         # Clear Button
         self.clear_button = QPushButton("Clear")
@@ -274,6 +274,10 @@ class ActuateGUI(QWidget):
             self.logger.log("Plotting trajectory...")
         else:
             self.logger.log("No trajectory data to plot.")
+
+    def emergency_stop(self):
+        self.stop()
+        self.crux.emergency_stop()
 
     def execute(self):
         for line in self.gcode:

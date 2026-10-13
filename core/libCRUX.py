@@ -278,7 +278,7 @@ class CRUX:
                 encoded_response = connection.read_until(b'\n')
                 response = encoded_response.decode('ascii')
 
-                para = self.decode_response(code, response)
+                para = self.for_return
 
                 if not para:
                     raise ValueError(f"Invalid response for '{code}': {response!r}")
@@ -415,6 +415,7 @@ class CRUX:
         connection=self.select_port(port)
         code1='APS%d/%d/%d/%d' %(axis,speedtable,pos_pulse,0)
         self.commun(code1,connection,port)
+        self.check_end(connection, port)
         code2='RDP%d' %axis
         self.commun(code2,connection,port)
 
@@ -451,10 +452,10 @@ class CRUX:
         code2='RDP%d' %axis
         self.commun(code2,connection,port)
 
-    def RDP(self, axis,port):
+    def RDP(self, axis, port):
         connection=self.select_port(port)
         code='RDP%d' %axis
-        self.commun(code,connection,port)
+        self.commun(code, connection, port)
 
     def RTB(self, axis, table_no, port):
         connection=self.select_port(port)

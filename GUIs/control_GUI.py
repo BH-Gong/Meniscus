@@ -572,20 +572,11 @@ class ControlGUI(QWidget):
 
             if mode == 'bed':
                 self.move('bed')
-                if self.get_mode('bed') == 'Continuous':
-                    self.bed_timer.start(100)
             elif mode == 'noz':
                 self.move('noz')
-                if self.get_mode('noz') == 'Continuous':
-                    self.noz_timer.start(100)
 
     def on_button_release(self, mode, event=None):
         self.is_button_pressed = False
-
-        if mode == 'bed':
-            self.bed_timer.stop()
-        elif mode == 'noz':
-            self.noz_timer.stop()
 
         if self.current_port is not None:
             self.command_queue.put(lambda axis=self.current_axis, port=self.current_port: 
@@ -628,7 +619,7 @@ class ControlGUI(QWidget):
                         self.command_queue.put(lambda axis=axis, speedtable=speedtable, port=port, pos=pos: 
                                             self.model.APS(axis, speedtable, port, pos))
                 elif mode == 'Relative':
-                    self.model.RDP_manual(axis, port)
+                    self.model.RDP(axis, port)
                     current_pos = int(self.model.for_return)
                     if current_pos + pos > self.limit:
                         self.logger.error(f"The entered value exceeds the maximum limit for relative movement. It will be set to {self.limit}.")
