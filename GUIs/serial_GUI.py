@@ -248,14 +248,16 @@ class Serial_Selection(QWidget):
             shared_data.connections.append(temp_ser)
 
             temp_connection = CRUX(self.logger)
-            temp_connection.RTB_manual(ax_info['axis'], ax_info['name'], table_No=0)
+            temp_connection.RTB(ax_info['axis'], 0, ax_info['name'])
             original_setting_speed = temp_connection.for_return
 
-            if not original_setting_speed or len(original_setting_speed) < 3:
+            if not original_setting_speed:
                 raise TimeoutError(f"Driver not responding or wrong device connected in ({ax_info['name']}).")
+            elif len(original_setting_speed) < 3:
+                raise ValueError(f"Unexpected response from driver in ({ax_info['name']}): {original_setting_speed}")
 
             temp_connection.WTB(ax_info['axis'], ax_info['name'], 0, 1)
-            temp_connection.RTB_manual(ax_info['axis'], ax_info['name'], table_No=0)
+            temp_connection.RTB(ax_info['axis'], 0, ax_info['name'])
 
             for _ in range(self.test_cycle):
                 temp_connection.RPS(ax_info['axis'], 0, ax_info['name'], 1)
@@ -264,7 +266,7 @@ class Serial_Selection(QWidget):
                 time.sleep(0.1)
 
             temp_connection.WTB(ax_info['axis'], ax_info['name'], 0, int(original_setting_speed[2]))
-            temp_connection.RTB_manual(ax_info['axis'], ax_info['name'], table_No=0)
+            temp_connection.RTB(ax_info['axis'], 0, ax_info['name'])
 
         except Exception as e:
             self.logger.error(f"check_button_action error: {e}")

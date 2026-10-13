@@ -1,5 +1,4 @@
 import time
-import sqlite3
 import pandas as pd
 import threading
 from datetime import datetime
@@ -65,7 +64,6 @@ class CRUX:
         self.connections = shared_data.connections
         self.ports = shared_data.ports
         self.debounces = {}
-        self.cursor = self.conn.cursor()
         self.error_codes = all_error_code
         self.pos = shared_data.pos
         self.stop_lock = threading.Lock()
@@ -85,8 +83,6 @@ class CRUX:
             print("입력하신 값은 0~9 사이의 값이 아닙니다.")
         else:
             print("입력하신 번호인 {}번 speed table에 입력값을 저장합니다.".format(table_No))
-            self.cursor.execute('''UPDATE speedtable SET pattern = ?, time = ?, startspeed = ?, topspeed = ? WHERE table_No = ?''', (pattern, time, startspeed, topspeed, table_No))
-            self.conn.commit()
             input_value=(table_No, pattern, time, startspeed, topspeed)
             return input_value
         
@@ -94,55 +90,36 @@ class CRUX:
         if sys_No>68 or sys_No==0:
             print("입력하신 값은 1~68 사이의 값이 아닙니다.")
         elif sys_No in (1,2,6,7,8,21,22,23,61,66,67,68):
-            self.cursor.execute('''UPDATE sys_setting SET value = ? WHERE sys_No= ?''',(value, sys_No))
-            self.conn.commit()
             sys_setting=(sys_No, value) 
             return sys_setting
         else:
             print("존재하지 않는 시스템 번호입니다.")
 
     def change_parameter(self,parameter_name,value):
-        self.cursor.execute('''UPDATE parameter SET value = ? WHERE parameter_name= ?''',(value,parameter_name))
-        self.conn.commit()
         parameter=(parameter_name,value)
         return parameter
 
 # select data in database ##############################################################################################################################################################
     def select_speedtable(self, table_No): 
-        self.cursor.execute('SELECT * FROM speedtable LIMIT 1 OFFSET ?',(table_No,))
-        parameter=self.cursor.fetchone()
         return parameter
     
     def select_sys_setting(self):
         id=int(input("읽을 System setting 번호를 입력하세요: "))
-        self.cursor.execute('SELECT * FROM sys_setting WHERE id=? LIMIT 1',(id,))
-        sys_setting=self.cursor.fetchone()
         return sys_setting
 
     def select_parameter(self,parameter_name):
-        self.cursor.execute('SELECT * FROM parameter WHERE parameter_name= ? LIMIT 1',(parameter_name,))
-        parameter_value=self.cursor.fetchone()
         return parameter_value
 
 # search data in database ######################################################################################################
     def search_speedtable_data(self):
-        self.cursor.execute("SELECT * FROM speedtable")
-        rows = self.cursor.fetchall()
-        cols = [column[0] for column in self.cursor.description]
         df_speedtable = pd.DataFrame.from_records(data=rows, columns=cols)
         print(df_speedtable)
     
     def search_parameter_data(self):
-        self.cursor.execute("SELECT * FROM parameter")
-        rows = self.cursor.fetchall()
-        cols = [column[0] for column in self.cursor.description]
         df_parameter = pd.DataFrame.from_records(data=rows, columns=cols)
         print(df_parameter)
 
     def search_sys_setting_data(self):
-        self.cursor.execute("SELECT * FROM sys_setting")
-        rows = self.cursor.fetchall()
-        cols = [column[0] for column in self.cursor.description]
         df_sys_setting = pd.DataFrame.from_records(data=rows, columns=cols)
         print(df_sys_setting)
 
