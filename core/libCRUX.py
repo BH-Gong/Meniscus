@@ -65,7 +65,6 @@ class CRUX:
         self.connections = shared_data.connections
         self.ports = shared_data.ports
         self.debounces = {}
-        self.conn = sqlite3.connect('CRUX.db')
         self.cursor = self.conn.cursor()
         self.error_codes = all_error_code
         self.pos = shared_data.pos
@@ -74,7 +73,7 @@ class CRUX:
         self.stop_flag = False
         self.commands = []
         self.line = []
-        self.for_return = 0
+        self.for_return = ()
 
     def __str__(self):
         return f"CRUX(ports={self.ports}, connections={self.connections})"
@@ -192,7 +191,6 @@ class CRUX:
 
     def decode_response(self, command, response):
         try:
-            for_return = () 
             parts = response.rstrip('\r\n').split('\t')
             id_code = parts[0]
             command_code = parts[1][:3]
@@ -206,55 +204,55 @@ class CRUX:
                 if command_code == 'APS':
                     axis_no = params[0]
 
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f'Absolute position drive, axis No.{axis_no}.')
 
                 elif command_code == 'FRP':
                     axis_no = params[0]
 
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f'Free rotation drive, axis No.{axis_no}.')
 
                 elif command_code == 'IDN':
                     model_name = params[0]
                     version = int(params[1]) / 1000
 
-                    for_return = (model_name, version)
+                    self.for_return = (model_name, version)
                     self.logger.hidden(f'{model_name} Ver.{version}')
 
                 elif command_code == 'MPI':
                     axis_no = params[0]
 
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f"Initial parameter setted for MPS, axis No.{axis_no}.")
 
                 elif command_code == 'MPS':
                     axis_no = params[0]
 
-                    for_return = (axis_No,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f"Multi-axis position drive, {axis_no}(first one).")
 
                 elif command_code == 'ORG':
                     axis_no = params[0]
 
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f'Origin return drive, axis No.{axis_no}.')
 
                 elif command_code == 'RDP':
                     axis_no = params[0]
                     position = params[1]
 
-                    for_return = (axis_No, position)
+                    self.for_return = (axis_no, position)
                     self.logger.hidden(f'Current position of Axis No.{axis_no} is {position}.')
 
                 elif command_code == 'RPS':
                     axis_no = params[0]
 
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f'Relative position drive, axis No.{axis_no}.')
 
                 elif command_code == 'RST':
-                    for_return = ()
+                    self.for_return = ()
                     self.logger.hidden(f'System reseted.')
 
                 elif command_code == 'RSY':
@@ -262,7 +260,7 @@ class CRUX:
                     sys_no = params[1]
                     set_value = params[2]
 
-                    for_return = (axis_no, sys_no, set_value)
+                    self.for_return = (axis_no, sys_no, set_value)
                     self.logger.hidden(f'Set value of system No.{sys_no} in axis No.{axis_no} as {set_value}')
 
                 elif command_code == 'RTB':
@@ -273,20 +271,20 @@ class CRUX:
                     acc_time = params[4]
                     acc_mode = params[5]
 
-                    for_return = (axis_no, spdtable_no, str_spd, max_spd, acc_time, acc_mode)
+                    self.for_return = (axis_no, spdtable_no, str_spd, max_spd, acc_time, acc_mode)
                     self.logger.hidden(f'Axis No.{axis_no} : speedtable No.{spdtable_no},'
                                        f'Initial Velocity={str_spd}, Maximum Velocity={max_spd},' 
                                        f'Acceleration Time={acc_time}, Acceleration Mode={acc_mode}' 
                                        f'(1:Rectangular drive, 2:Trapezoidal drive)')
 
                 elif command_code == 'SAV':
-                    for_return = ()
+                    self.for_return = ()
                     self.logger.hidden(f'Position data saved.')
 
                 elif command_code == 'STP':
                     axis_no = params[0]
 
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f'Motor stop, axis No.{axis_no}.')
                 
                 elif command_code == 'STR':
@@ -298,21 +296,21 @@ class CRUX:
                     cw_lim = params[5]
 
                     if axis_no == '1' or axis_no == '2':
-                        for_return = (axis_no, drv_state, org_sig, norg_sig, ccw_lim, cw_lim)
+                        self.for_return = (axis_no, drv_state, org_sig, norg_sig, ccw_lim, cw_lim)
                         self.logger.hidden(f'Axis No.{axis_no} : driving state={drv_state},'
                                            f'ORG signal={org_sig}, NORG signal={norg_sig},' 
                                            f'CCW limit signal={ccw_lim}, CW limit signal={cw_lim}'
                                            f'(0:OFF(STOP), 1:ON(Operating))')
 
                     elif axis_no == '0':
-                        for_return = (axis_no, drv_state)
+                        self.for_return = (axis_no, drv_state)
                         self.logger.hidden(f'Axis No.{axis_no} : EMG signal={drv_state} (0:OFF, 1:ON).')
                 
                 elif command_code == 'WRP':
                     axis_no = params[0]
                     set_value = params[1]
 
-                    for_return = (axis_no, sys_no, set_value)
+                    self.for_return = (axis_no, sys_no, set_value)
                     self.logger.hidden(f'Set position value of axis No.{axis_no} as {set_value}.')
 
                 elif command_code == 'WSY':
@@ -320,13 +318,13 @@ class CRUX:
                     sys_no = params[1]
                     set_value = params[2]
 
-                    for_return = (axis_no, sys_no, set_value)
+                    self.for_return = (axis_no, sys_no, set_value)
                     self.logger.hidden(f'Set value of system No.{sys_no} in axis No.{axis_no} as {set_value}.')
 
                 elif command_code == 'WTB':
                     axis_no = params[0]
                     
-                    for_return = (axis_no,)
+                    self.for_return = (axis_no,)
                     self.logger.hidden(f'Write speed table, axis No.{axis_no}.')
 
                 else:
@@ -351,9 +349,9 @@ class CRUX:
                     raise ValueError(f'Unexpected response : {response}')
 
                 error_para = params
-                error_msg = get_error_message(error_typ, error_para)
+                error_msg = self.get_error_message(error_typ, error_para)
 
-                for_return = (error_typ, error_para)
+                self.for_return = (error_typ, error_para)
                 self.logger.error(f'{error_msg}')
 
             else:
@@ -364,8 +362,6 @@ class CRUX:
         except Exception as e:
             traceback.print_exc()
             self.logger.error(traceback.format_exc())
-
-        return for_return
             
     def check_end(self, connection, port):
         start_time = time.time()
@@ -404,8 +400,6 @@ class CRUX:
         return True
 
     def get_error_message(self, error_typ, error_para):
-        err_msg = self.lookup_error(error_no)
-
         if error_typ == 'sys':
             err_msg = self.lookup_error(error_para[0])
             s = f'System Error : {err_msg}'
@@ -563,6 +557,11 @@ class CRUX:
         connection=self.select_port(port)
         code='RDP%d' %axis
         self.commun(code,connection,port)
+
+    def RTB(self, axis, table_no, port):
+        connection=self.select_port(port)
+        code='RTB%d/%d' %(axis, table_no)
+        self.commun(code, connection, port)
         
     def RPS(self, axis, speedtable, port, pos_pulse):
         connection=self.select_port(port)
@@ -602,268 +601,268 @@ class CRUX:
         code='FRP%d/%d/%d' %(axis, speedtable, direction)
         self.commun(code,connection,port)
 
-    ## manual command code ##############################################################################################################################################################
-    def APS_manual(self,axis,speedtable,port):
-        connection=self.select_port(port)
-        command='APS'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=speedtable
-        parameter_index='pos_abs%d' %a
-        c=self.select_parameter([parameter_index])[1]
-        d=self.select_parameter('response_method')[1]
-        code1='APS%d/%d/%d/%d' %(a,b,c,d)
-        self.commun(code1,connection,port)
-        time.sleep(wait_secs)
-        code2='RDP%d' %a
-        self.commun(code2,connection,port)
-        time.sleep(wait_secs)
+    # ## manual command code ##############################################################################################################################################################
+    # def APS_manual(self,axis,speedtable,port):
+    #     connection=self.select_port(port)
+    #     command='APS'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=speedtable
+    #     parameter_index='pos_abs%d' %a
+    #     c=self.select_parameter([parameter_index])[1]
+    #     d=self.select_parameter('response_method')[1]
+    #     code1='APS%d/%d/%d/%d' %(a,b,c,d)
+    #     self.commun(code1,connection,port)
+    #     time.sleep(wait_secs)
+    #     code2='RDP%d' %a
+    #     self.commun(code2,connection,port)
+    #     time.sleep(wait_secs)
     
-    def COF_manual(self,axis,port):
-        connection=self.select_port(port)
-        command='COF'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=int(input('Choose ON/OFF for excitation(0=OFF/1=ON): '))
-        code='COF%d/%d' %(a,b)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def COF_manual(self,axis,port):
+    #     connection=self.select_port(port)
+    #     command='COF'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=int(input('Choose ON/OFF for excitation(0=OFF/1=ON): '))
+    #     code='COF%d/%d' %(a,b)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
 
-    def FRP_manual(self, axis, speedtable,port):
-        connection=self.select_port(port)
-        command='FRP'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=speedtable
-        c=int(input('Choose Rotating direction(0=CW/1=CCW): '))
-        code='FRP%d/%d/%d' %(a,b,c)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def FRP_manual(self, axis, speedtable,port):
+    #     connection=self.select_port(port)
+    #     command='FRP'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=speedtable
+    #     c=int(input('Choose Rotating direction(0=CW/1=CCW): '))
+    #     code='FRP%d/%d/%d' %(a,b,c)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
 
-    def IDN_manual(self,port):
-        connection=self.select_port(port)
-        command='IDN'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        code='IDN'
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def IDN_manual(self,port):
+    #     connection=self.select_port(port)
+    #     command='IDN'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     code='IDN'
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
     
-    def MPI_manual(self,axis,speedtable,port):
-        connection=self.select_port(port)
-        command='MPI'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=self.select_parameter('drive_type')[1]
-        c=speedtable
-        code1='MPI%d/%d/%d' %(a,b,c)
-        self.commun(code1,connection,port)
-        time.sleep(wait_secs)
-        code2='RDP%d' %a
-        self.commun(code2,connection,port)
-        time.sleep(wait_secs)
+    # def MPI_manual(self,axis,speedtable,port):
+    #     connection=self.select_port(port)
+    #     command='MPI'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=self.select_parameter('drive_type')[1]
+    #     c=speedtable
+    #     code1='MPI%d/%d/%d' %(a,b,c)
+    #     self.commun(code1,connection,port)
+    #     time.sleep(wait_secs)
+    #     code2='RDP%d' %a
+    #     self.commun(code2,connection,port)
+    #     time.sleep(wait_secs)
     
-    def MPS_manual(self,axis1, axis2,port):
-        connection=self.select_port(port)
-        x=self.select_parameter('drive_type')[1]
-        command='MPS'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        if x==0:# 절대이동
-            a=axis1
-            parameter_index1='pos_abs%d' %a
-            b=self.select_parameter(parameter_index1)[1]
-            c=axis2
-            parameter_index2='pos_abs%d' %c
-            d=self.select_parameter(parameter_index2)[1]
-            e=self.select_parameter('response_method')[1]
-            code1='MPS%d/%d/%d/%d/%d' %(a,b,c,d,e)
-            self.commun(code1,connection,port)
-            time.sleep(wait_secs)
-            code2='RDP%d' %a
-            self.commun(code2,connection,port)
-            code3='RDP%d' %c
-            self.commun(code3,connection,port)
-            time.sleep(wait_secs)
-        else: # 상대이동
-            a=axis1
-            parameter_index1='pos_rel%d' %a
-            b=self.select_parameter(parameter_index1)[1]
-            c=axis2
-            parameter_index2='pos_rel%d' %c
-            d=self.select_parameter(parameter_index2)[1]
-            e=self.select_parameter('response_method')[1]
-            code1='MPS%d/%d/%d/%d/%d' %(a,b,c,d,e)
-            self.commun(code1,connection,port)
-            time.sleep(wait_secs)
-            code2='RDP%d' %a
-            self.commun(code2,connection,port)
-            code3='RDP%d' %c
-            self.commun(code3,connection,port)
-            time.sleep(wait_secs)
+    # def MPS_manual(self,axis1, axis2,port):
+    #     connection=self.select_port(port)
+    #     x=self.select_parameter('drive_type')[1]
+    #     command='MPS'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     if x==0:# 절대이동
+    #         a=axis1
+    #         parameter_index1='pos_abs%d' %a
+    #         b=self.select_parameter(parameter_index1)[1]
+    #         c=axis2
+    #         parameter_index2='pos_abs%d' %c
+    #         d=self.select_parameter(parameter_index2)[1]
+    #         e=self.select_parameter('response_method')[1]
+    #         code1='MPS%d/%d/%d/%d/%d' %(a,b,c,d,e)
+    #         self.commun(code1,connection,port)
+    #         time.sleep(wait_secs)
+    #         code2='RDP%d' %a
+    #         self.commun(code2,connection,port)
+    #         code3='RDP%d' %c
+    #         self.commun(code3,connection,port)
+    #         time.sleep(wait_secs)
+    #     else: # 상대이동
+    #         a=axis1
+    #         parameter_index1='pos_rel%d' %a
+    #         b=self.select_parameter(parameter_index1)[1]
+    #         c=axis2
+    #         parameter_index2='pos_rel%d' %c
+    #         d=self.select_parameter(parameter_index2)[1]
+    #         e=self.select_parameter('response_method')[1]
+    #         code1='MPS%d/%d/%d/%d/%d' %(a,b,c,d,e)
+    #         self.commun(code1,connection,port)
+    #         time.sleep(wait_secs)
+    #         code2='RDP%d' %a
+    #         self.commun(code2,connection,port)
+    #         code3='RDP%d' %c
+    #         self.commun(code3,connection,port)
+    #         time.sleep(wait_secs)
             
-    def ORG_manual(self, axis, speedtable,port):
-        connection=self.select_port(port)
-        command='ORG'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=speedtable
-        c=self.select_parameter('response_method')[1]
-        code1='ORG%d/%d/%d' %(a,b,c)
-        self.commun(code1,connection,port)
-        time.sleep(wait_secs)
-        code2='RDP%d' %a
-        self.commun(code2,connection,port)
-        time.sleep(wait_secs)
+    # def ORG_manual(self, axis, speedtable,port):
+    #     connection=self.select_port(port)
+    #     command='ORG'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=speedtable
+    #     c=self.select_parameter('response_method')[1]
+    #     code1='ORG%d/%d/%d' %(a,b,c)
+    #     self.commun(code1,connection,port)
+    #     time.sleep(wait_secs)
+    #     code2='RDP%d' %a
+    #     self.commun(code2,connection,port)
+    #     time.sleep(wait_secs)
 
-    def RDP_manual(self, axis,port):
-        connection=self.select_port(port)
-        command='RDP'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        code='RDP%d' %a
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def RDP_manual(self, axis,port):
+    #     connection=self.select_port(port)
+    #     command='RDP'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     code='RDP%d' %a
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
     
-    def RPS_manual(self,axis,speedtable,port):
-        connection=self.select_port(port)
-        command='RPS'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        parameter_index='pos_rel%d' %a
-        b=speedtable
-        c=self.select_parameter(parameter_index)[1]
-        d=self.select_parameter('response_method')[1]
-        code1='RPS%d/%d/%d/%d' %(a,b,c,d)
-        self.commun(code1,connection,port)
-        time.sleep(wait_secs)
-        code2='RDP%d' %a
-        self.commun(code2,connection,port)
-        time.sleep(wait_secs)
+    # def RPS_manual(self,axis,speedtable,port):
+    #     connection=self.select_port(port)
+    #     command='RPS'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     parameter_index='pos_rel%d' %a
+    #     b=speedtable
+    #     c=self.select_parameter(parameter_index)[1]
+    #     d=self.select_parameter('response_method')[1]
+    #     code1='RPS%d/%d/%d/%d' %(a,b,c,d)
+    #     self.commun(code1,connection,port)
+    #     time.sleep(wait_secs)
+    #     code2='RDP%d' %a
+    #     self.commun(code2,connection,port)
+    #     time.sleep(wait_secs)
     
-    def RST_manual(self,port):
-        connection=self.select_port(port)
-        command='RST'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        code='RST'
-        self.commun(code,connection,port)
-        for table_No, pattern, acctime, startspeed, topspeed in speedtable_default:
-            self.change_speedtable(table_No, pattern,acctime,startspeed,topspeed)
-        for sys_No, value in sys_default:
-            self.change_sys_setting(sys_No,value)
-        self.change_parameter('pos_current1', 0)
-        self.change_parameter('pos_current2', 0)
-        time.sleep(wait_secs)
+    # def RST_manual(self,port):
+    #     connection=self.select_port(port)
+    #     command='RST'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     code='RST'
+    #     self.commun(code,connection,port)
+    #     for table_No, pattern, acctime, startspeed, topspeed in speedtable_default:
+    #         self.change_speedtable(table_No, pattern,acctime,startspeed,topspeed)
+    #     for sys_No, value in sys_default:
+    #         self.change_sys_setting(sys_No,value)
+    #     self.change_parameter('pos_current1', 0)
+    #     self.change_parameter('pos_current2', 0)
+    #     time.sleep(wait_secs)
 
-    def RSY_manual(self,axis,port):
-        connection=self.select_port(port)
-        command='RSY'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=int(input("읽을 system setting 번호를 입력하세요: "))
-        code='RSY%d/%d' %(a,b)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def RSY_manual(self,axis,port):
+    #     connection=self.select_port(port)
+    #     command='RSY'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=int(input("읽을 system setting 번호를 입력하세요: "))
+    #     code='RSY%d/%d' %(a,b)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
     
-    def RTB_manual(self,axis,port,table_No=None):
-        connection=self.select_port(port)
-        command='RTB'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        if table_No is None:
-            b=int(input("읽을 speedtable 번호를 입력하세요: "))
-        else:
-            b=table_No
-        code='RTB%d/%d' %(a,b)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def RTB_manual(self,axis,port,table_No=None):
+    #     connection=self.select_port(port)
+    #     command='RTB'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     if table_No is None:
+    #         b=int(input("읽을 speedtable 번호를 입력하세요: "))
+    #     else:
+    #         b=table_No
+    #     code='RTB%d/%d' %(a,b)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
         
-    #  def SAV(self,port):
-    #    connection=self.select_port(port)
-    #    command='SAV'
-    #    self.debounce(command, wait_secs=0.007)
-    #    wait_secs=self.debounces[command]
-    #    code='SAV'
-    #    self.commun(code,connection)
-    #    time.sleep(wait_secs)
+    # #  def SAV(self,port):
+    # #    connection=self.select_port(port)
+    # #    command='SAV'
+    # #    self.debounce(command, wait_secs=0.007)
+    # #    wait_secs=self.debounces[command]
+    # #    code='SAV'
+    # #    self.commun(code,connection)
+    # #    time.sleep(wait_secs)
 
-    def STP_manual(self,axis,port):
-        connection=self.select_port(port)
-        command='STP'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        b=self.select_parameter('stop_mode')
-        code='STP%d/%d' %(a,b)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def STP_manual(self,axis,port):
+    #     connection=self.select_port(port)
+    #     command='STP'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     b=self.select_parameter('stop_mode')
+    #     code='STP%d/%d' %(a,b)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
     
-    def STR_manual(self, axis,port):
-        connection=self.select_port(port)
-        command='STR'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        a=axis
-        if a==0: #check EMG sig.
-            code='STR0'
-            self.commun(code,connection,port)
-            time.sleep(wait_secs)
-        else:
-            code='STR%d' %a
-            self.commun(code,connection,port)
-            time.sleep(wait_secs)
+    # def STR_manual(self, axis,port):
+    #     connection=self.select_port(port)
+    #     command='STR'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     a=axis
+    #     if a==0: #check EMG sig.
+    #         code='STR0'
+    #         self.commun(code,connection,port)
+    #         time.sleep(wait_secs)
+    #     else:
+    #         code='STR%d' %a
+    #         self.commun(code,connection,port)
+    #         time.sleep(wait_secs)
         
-    def WRP_manual(self,axis,port): ## write current pulse
-        connection=self.select_port(port)
-        command='WRP'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        parameter_name='pos_current%d' %a
-        pos=self.change_parameter(parameter_name)
-        a=axis
-        b=pos[1] 
-        code='WRP%d/%d' %(a,b)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def WRP_manual(self,axis,port): ## write current pulse
+    #     connection=self.select_port(port)
+    #     command='WRP'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     parameter_name='pos_current%d' %a
+    #     pos=self.change_parameter(parameter_name)
+    #     a=axis
+    #     b=pos[1] 
+    #     code='WRP%d/%d' %(a,b)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
 
-    def WSY_manual(self,axis,port): ## write system setting
-        connection=self.select_port(port)
-        command='WSY'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        sys_setting=self.change_sys_setting()
-        a=axis
-        b=sys_setting[0]
-        c=sys_setting[1]
-        code='WSY%d/%d/%d' %(a,b,c)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def WSY_manual(self,axis,port): ## write system setting
+    #     connection=self.select_port(port)
+    #     command='WSY'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     sys_setting=self.change_sys_setting()
+    #     a=axis
+    #     b=sys_setting[0]
+    #     c=sys_setting[1]
+    #     code='WSY%d/%d/%d' %(a,b,c)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
 
-    def WTB_manual(self,axis,port):
-        connection=self.select_port(port)
-        input_value=self.change_speedtable()
-        a=axis
-        b=input_value[0]
-        c=input_value[3]
-        d=input_value[4]
-        e=input_value[2]
-        f=input_value[1]
-        command='WTB'
-        self.debounce(command, wait_secs=0.007)
-        wait_secs=self.debounces[command]
-        code='WTB%d/%d/%d/%d/%d/%d' %(a,b,c,d,e,f)
-        self.commun(code,connection,port)
-        time.sleep(wait_secs)
+    # def WTB_manual(self,axis,port):
+    #     connection=self.select_port(port)
+    #     input_value=self.change_speedtable()
+    #     a=axis
+    #     b=input_value[0]
+    #     c=input_value[3]
+    #     d=input_value[4]
+    #     e=input_value[2]
+    #     f=input_value[1]
+    #     command='WTB'
+    #     self.debounce(command, wait_secs=0.007)
+    #     wait_secs=self.debounces[command]
+    #     code='WTB%d/%d/%d/%d/%d/%d' %(a,b,c,d,e,f)
+    #     self.commun(code,connection,port)
+    #     time.sleep(wait_secs)
 
 # debounce 설정 ######################################################################################
     def debounce(self, command, wait_secs):
