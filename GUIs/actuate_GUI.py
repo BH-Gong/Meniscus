@@ -108,7 +108,7 @@ class ActuateGUI(QWidget):
 
         self.command_tree = QTreeWidget()
         self.command_tree.setHeaderLabels(["Index", "Command"])
-        self.command_tree.setStyleSheet(tree_style())
+        self.command_tree.setStyleSheet(utils.tree_style())
         self.command_tree.setFont(QFont('Arial', 12))
         self.command_tree.verticalScrollBarPolicy()
 
