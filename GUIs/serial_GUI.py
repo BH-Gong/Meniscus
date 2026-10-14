@@ -182,6 +182,7 @@ class Serial_Selection(QWidget):
             self.ax_frame[port_name]['ax1_combo'].setFont(QFont('Arial', 10))
             self.ax_frame[port_name]['ax1_combo'].setMaxVisibleItems(11)
             self.ax_frame[port_name]['ax1_combo'].addItems(['-', 'BD-X', 'BD-Y', 'BD-Z', 'BD-TX', 'BD-TY', 'NZ-X', 'NZ-Y', 'NZ-Z', 'NZ-R', 'None'])
+            self.ax_frame[port_name]['ax1_info']['combo_value'] = self.ax_frame[port_name]['ax1_combo'].currentText()
             self.ax_frame[port_name]['ax1_combo'].currentTextChanged.connect(lambda text: self.ax_frame[port_name]['ax1_info'].__setitem__('combo_value', text))
 
             self.ax_frame[port_name]['ax1_sublayout'] = QHBoxLayout()
@@ -214,6 +215,7 @@ class Serial_Selection(QWidget):
             self.ax_frame[port_name]['ax2_combo'].setFont(QFont('Arial', 10))
             self.ax_frame[port_name]['ax2_combo'].setMaxVisibleItems(11)
             self.ax_frame[port_name]['ax2_combo'].addItems(['-', 'BD-X', 'BD-Y', 'BD-Z', 'BD-TX', 'BD-TY', 'NZ-X', 'NZ-Y', 'NZ-Z', 'NZ-R', 'None'])
+            self.ax_frame[port_name]['ax2_info']['combo_value'] = self.ax_frame[port_name]['ax2_combo'].currentText()
             self.ax_frame[port_name]['ax2_combo'].currentTextChanged.connect(lambda text: self.ax_frame[port_name]['ax2_info'].__setitem__('combo_value', text))
 
             self.ax_frame[port_name]['ax2_sublayout'] = QHBoxLayout()

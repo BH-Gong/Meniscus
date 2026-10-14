@@ -3,9 +3,9 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
 from core import shared_data
+from core import utils
 from core.libCRUX import CRUX
 from core.logger import Logger
-from core.utils import *
 from core.code_generator import CodeGenerator
 
 from PIL import Image
@@ -66,13 +66,13 @@ class ActuateGUI(QWidget):
 
         # Emergency Stop Button
         self.emergency_stop_button = QPushButton("Emergency Stop\n(Ctrl+E)")
-        self.emergency_stop_button.setStyleSheet(button_style())
+        self.emergency_stop_button.setStyleSheet(utils.button_style())
         self.emergency_stop_button.setFont(QFont('Arial', 10, QFont.Bold))
         self.emergency_stop_button.clicked.connect(self.emergency_stop)
 
         # Clear Button
         self.clear_button = QPushButton("Clear")
-        self.clear_button.setStyleSheet(button_style())
+        self.clear_button.setStyleSheet(utils.button_style())
         self.clear_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.clear_button.setContentsMargins(20, 20, 20, 20)
         self.clear_button.clicked.connect(lambda: self.gcode_clear())
@@ -102,7 +102,7 @@ class ActuateGUI(QWidget):
         self.command_label.setFont(QFont('Arial', 18, QFont.Bold))
 
         self.load_file_button = QPushButton("Load G-code File")
-        self.load_file_button.setStyleSheet(button_style())
+        self.load_file_button.setStyleSheet(utils.button_style())
         self.load_file_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.load_file_button.clicked.connect(lambda: self.open_file())
 
@@ -172,7 +172,7 @@ class ActuateGUI(QWidget):
         self.trajectory_layout.addWidget(self.trajectory_label, alignment=Qt.AlignCenter)
 
         self.plot_button = QPushButton("Plot Trajectory")
-        self.plot_button.setStyleSheet(button_style())
+        self.plot_button.setStyleSheet(utils.button_style())
         self.plot_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.plot_button.setContentsMargins(20, 20, 20, 20)
         self.plot_button.clicked.connect(lambda: self.plot_trajectory())
@@ -193,35 +193,35 @@ class ActuateGUI(QWidget):
 
         self.act_button = QPushButton("Act")
         self.act_button.setEnabled(False)
-        self.act_button.setStyleSheet(button_style())
+        self.act_button.setStyleSheet(utils.button_style())
         self.act_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.act_button.setContentsMargins(0, 0, 0, 0)
         self.act_button.clicked.connect(lambda: self.execute())
 
         self.pause_button = QPushButton("Pause")
         self.pause_button.setEnabled(False)
-        self.pause_button.setStyleSheet(button_style())
+        self.pause_button.setStyleSheet(utils.button_style())
         self.pause_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.pause_button.setContentsMargins(0, 0, 0, 0)
         self.pause_button.clicked.connect(lambda: self.pause())
 
         self.resume_button = QPushButton("Resume")
         self.resume_button.setEnabled(False)
-        self.resume_button.setStyleSheet(button_style())
+        self.resume_button.setStyleSheet(utils.button_style())
         self.resume_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.resume_button.setContentsMargins(0, 0, 0, 0)
         self.resume_button.clicked.connect(lambda: self.resume())
 
         self.stop_button = QPushButton("Stop")
         self.stop_button.setEnabled(False)
-        self.stop_button.setStyleSheet(button_style())
+        self.stop_button.setStyleSheet(utils.button_style())
         self.stop_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.stop_button.setContentsMargins(0, 0, 0, 0)
         self.stop_button.clicked.connect(lambda: self.stop())
 
         self.reset_button = QPushButton("Reset")
         self.reset_button.setEnabled(False)
-        self.reset_button.setStyleSheet(button_style())
+        self.reset_button.setStyleSheet(utils.button_style())
         self.reset_button.setFont(QFont('Arial', 14, QFont.Bold))
         self.reset_button.setContentsMargins(0, 0, 0, 0)
         self.reset_button.clicked.connect(lambda: self.reset())
@@ -255,8 +255,15 @@ class ActuateGUI(QWidget):
         # self.logger.warning(self.code_generator)
 
         self.act_button.setEnabled(True)
-        self.gcode, self.trajectory, self.estimate_time = open_file(self.logger, self.command_tree, self.model)
-        formatted_time = format_seconds(self.estimate_time)
+        
+        result = utils.open_file(self.logger, self.command_tree, self.model)
+
+        if result is None:
+            return
+    
+        self.gcode, self.trajectory, self.estimate_time = result
+
+        formatted_time = utils.format_seconds(self.estimate_time)
         self.est_time_value.setText(formatted_time)
 
     def plot_trajectory(self):
@@ -359,7 +366,7 @@ class ActuateGUI(QWidget):
         self.logger.log("Clearing G-code data...")
 
     def process_commands(self):
-        if is_worker_running(shared_data.worker_thread, shared_data.stop_event):
+        if utils.is_worker_running(shared_data.worker_thread, shared_data.stop_event):
             return
         
         self.stop_event.clear()
@@ -401,7 +408,7 @@ class ActuateGUI(QWidget):
             if self.is_paused:
                 self.paused_duration = (time.time() - self.pause_start_time)
             elapsed = time.time() - self.start_time - self.sum_pause_time - self.paused_duration
-            self.elap_time_value.setText(format_seconds(elapsed))
+            self.elap_time_value.setText(utils.format_seconds(elapsed))
 
         if elapsed >= self.estimate_time:
             self.stop()

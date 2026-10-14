@@ -28,7 +28,6 @@ class CRUX:
         self.connections = shared_data.connections
         self.ports = shared_data.ports
         self.debounces = {}
-        self.error_codes = all_error_code
         self.pos = shared_data.pos
         self.stop_lock = threading.Lock()
         self.emg_event = threading.Event()
@@ -80,6 +79,7 @@ class CRUX:
 
                     if response:
                         decode_response = response.decode('ascii')
+                        print(code, decode_response)
                         self.decode_response(decode_response)
 
                     self.logger.hidden(f"Commanding Done...")
@@ -261,39 +261,37 @@ class CRUX:
             traceback.print_exc()
             self.logger.error(traceback.format_exc())
             
-    def check_end(self, connection, port):
+    def check_end(self, port):
         start_time = time.time()
 
         while True:
             if time.time() - start_time >= 3:
-                raise TimeoutError(f"No response received for command '{code}' on port '{port}'.")
+                raise TimeoutError(f"No response received on port '{port}'.")
 
             all_stopped = True
 
             for axis_no in range(1, 3):
-                code = 'STR%d' %(axis_no)
-                encode = b'\x02' + code.encode('ascii') + b'\r\n'
-                connection.write(encode)
-
-                encoded_response = connection.read_until(b'\n')
-                response = encoded_response.decode('ascii')
+                self.STR(axis_no, port)
 
                 para = self.for_return
+                print(para)
 
                 if not para:
-                    raise ValueError(f"Invalid response for '{code}': {response!r}")
+                    raise ValueError(f"Invalid parameters: {para!r}")
 
-                if para[0] == '0':
+                start_time = time.time()
+
+                if para[1] == '0':
                     pass
-                elif para[0] == '1':
+                elif para[1] == '1':
                     all_stopped = False
                 else:
-                    raise ValueError(f"Unexpected response format: {response}")
+                    raise ValueError(f"Unexpected parameter formats: {para}")
 
             if all_stopped:
                 break
 
-            time.sleep(0.01)
+            time.sleep(0.05)
 
         return True
 
@@ -411,13 +409,12 @@ class CRUX:
                     self.logger.error(f"Failed to send emergency stop to port: {e}")
 
     ##command code ##############################################################################################################################################################
-    def APS(self,axis,speedtable,port,pos_pulse):
+    def APS(self, axis, speedtable, port, pos_pulse):
         connection=self.select_port(port)
-        code1='APS%d/%d/%d/%d' %(axis,speedtable,pos_pulse,0)
-        self.commun(code1,connection,port)
-        self.check_end(connection, port)
-        code2='RDP%d' %axis
-        self.commun(code2,connection,port)
+        code1='APS%d/%d/%d/%d' %(axis, speedtable, pos_pulse, 0)
+        self.commun(code1, connection, port)
+        self.check_end(port)
+        self.RDP(axis, port)
 
     def MPI(self,axis,speedtable,port,drive_type):
         connection=self.select_port(port)
@@ -495,6 +492,11 @@ class CRUX:
         code='STP%d/%d' %(axis, 1)
         self.commun(code, connection, port)
 
+    def STR(self, axis_no, port):
+        connection=self.select_port(port)
+        code = 'STR%d' %(axis_no)
+        self.commun(code, connection, port)
+                        
     def FRP(self, axis, speedtable, port, direction):
         connection=self.select_port(port)
         code='FRP%d/%d/%d' %(axis, speedtable, direction)
